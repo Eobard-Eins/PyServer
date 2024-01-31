@@ -81,6 +81,8 @@ class Nodes:
     Task = "task"
     User = "User"
     Blog = "Blog"
+    Tag = "Tag"
+
 
 
 class Rels:
@@ -88,6 +90,7 @@ class Rels:
     Recommended = "Recommended"  # 推荐过，user->task/blog
     Watched = "Watched"  # 看过,user->task/blog
     Rating = "Rating" # 评分，user->blog
+    Own = "Own" #某个task或blog拥有tag属性
 
 if(__name__ == '__main__'):
     test = GraphTool()
