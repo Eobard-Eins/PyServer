@@ -1,5 +1,5 @@
 from py2neo import Graph, Node, Relationship
-
+import numpy as np
 '''
 @desc Ne04j 基础操作类；
 采用图数据库原因：便于实现协同过滤/容易拓展
@@ -30,9 +30,10 @@ def setRelationship(relType,relName,relInfo:map={}):
     sql=""
     for i in relInfo:
         if type(relInfo[i]) is str:
-            sql = 'match (p:{0}) where p.name="{1}" set p.{2}="{3}"'.format(relType, relName, i, relInfo[i])
+            sql = 'match ()-[p:{0}]->() where p.name="{1}" set p.{2}="{3}"'.format(relType, relName, i, relInfo[i])
         else:
-            sql = 'match (p:{0}) where p.name="{1}" set p.{2}={3}'.format(relType, relName, i, relInfo[i])
+            sql = 'match ()-[p:{0}]->() where p.name="{1}" set p.{2}={3}'.format(relType, relName, i, relInfo[i])
+        print(sql)
         g.run(sql)
 
 def getNode(node, nodeType):
@@ -82,10 +83,24 @@ def hasNode(nodeName, nodeType):
     else:
         return True
     
-def getRatings(userId:str):
-    sql="match (n:Task)-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User) where k.name='{0}' return n.name as taskId,sum(a.value*b.value) as value order by value desc".format(userId)
+def getRatings(userId:str,k:int=12):
+    sql="match (n:Task)-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User) where k.name='{0}' return n.name as taskId,sum(a.value*b.value) as value order by value desc limit {1}".format(userId,k)
     res= g.run(sql).data()
     return res
+
+def updateIDF():#更新IDF
+    sql1="match (n:Task) return count(n) as a"#获取task总数
+    sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
+    A=g.run(sql1).data()[0]['a']
+    #print(A)
+    b=g.run(sql2).data()
+    for i in b:
+        k=np.log(A/(i['b']+1))
+        #print(k)
+        sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' set a.value={1}".format(i['mn'],k)
+        g.run(sql)
+    print("IDF alread updated")
+
 
 # TODO:
 

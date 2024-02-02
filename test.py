@@ -6,8 +6,9 @@ from neo4j import Nodes, Rels
 import neo4j
 
 #In[1]
-res=neo4j.getRatings("user1")
-print(res)
+res=neo4j.getRatings("user1",20)
+for i in res:
+    print(i)
 
 #In[2]
 neo4j.newNode(Nodes.Task, "task1")
@@ -54,4 +55,10 @@ print(res)
 res=neo4j.getAllNode(Nodes.Task)
 print(res)
 
+
+# %%
+neo4j.newNode(Nodes.Task, "task6")
+neo4j.newRelationship(Nodes.Task, Nodes.Tag, "task6", "tag2", Rels.Own, "task6-tag2", 0)
+neo4j.newRelationship(Nodes.Task, Nodes.Tag, "task6", "tag5", Rels.Own, "task6-tag2", 0)
+neo4j.updateIDF()
 # %%
