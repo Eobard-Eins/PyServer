@@ -2,6 +2,7 @@ import untils
 from py2neo import Graph
 import flask
 import json
+import taskService as ts
 '''
 @desc: api接口
 '''
@@ -12,11 +13,13 @@ server = flask.Flask(__name__)
 #@desc 添加新委托，生成特征向量并计算与各用户的相似度
 @server.route('/task/addNewTask', methods=['post'])
 def addNewTask():
+    
+    res=ts.addTask()
     return 'Hello World'
 
 #@desc 删除委托
-@server.route('/task/delTask', methods=['delete'])
-def delTask():
+@server.route('/task/disableTask', methods=['delete'])
+def disableTask():
     return 'Hello World'
 
 #@desc 获取推荐列表

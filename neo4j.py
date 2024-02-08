@@ -19,11 +19,11 @@ def newNode(label, name, info={}):
 def newRelationship(startType, endType, startNode, endNode, relType, relName, relValue):
     query=""
     if type(relValue) is str:
-        query = "match(p:%s),(q:%s) where p.name='%s'and q.name='%s' merge (p)-[rel:%s{name:'%s',value:'%s'}]->(q)" % (
-        startType, endType, startNode, endNode, relType, relName, relValue)
+        query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s',value:'%s'}]->(q)" % (
+        startType, startNode, endType, endNode, relType, relName, relValue)
     else:
-        query = "match(p:%s),(q:%s) where p.name='%s'and q.name='%s' merge (p)-[rel:%s{name:'%s',value:%s}]->(q)" % (
-        startType, endType, startNode, endNode, relType, relName, relValue)
+        query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s',value:%s}]->(q)" % (
+        startType, startNode, endType, endNode, relType, relName, relValue)
     g.run(query)
 
 def setRelationship(relType,relName,relInfo:map={}):
@@ -84,7 +84,8 @@ def hasNode(nodeName, nodeType):
         return True
     
 def getRatings(userId:str,k:int=12):
-    sql="match (n:Task)-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User) where k.name='{0}' return n.name as taskId,sum(a.value*b.value) as value order by value desc limit {1}".format(userId,k)
+    # 只有status为1的task才推荐
+    sql="match (n:Task)-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User) where k.name='{0}' and n.status=1 return n.name as taskId,sum(a.value*b.value) as value order by value desc limit {1}".format(userId,k)
     res= g.run(sql).data()
     return res
 
@@ -96,16 +97,22 @@ def updateIDF():#更新IDF
     b=g.run(sql2).data()
     for i in b:
         k=np.log(A/(i['b']+1))
-        #print(k)
-        sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' set a.value={1}".format(i['mn'],k)
+        # 只有status为1的task才更新
+        sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(i['mn'],k)
         g.run(sql)
     print("IDF alread updated")
 
-
+def getIDF(tag:str):
+    sql1="match (n:Task) return count(n) as a"#获取task总数
+    sql2="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' return count(n) as b".format(tag)#获取拥有某个tag的task总数
+    A=g.run(sql1).data()[0]['a']
+    B=g.run(sql2).data()[0]['b']
+    return np.log(A/(B+1))
+    #print(A)
 # TODO:
 
 class Nodes:
-    Task = "Task"#{name:id,}
+    Task = "Task"#{name:id, status:0/1} status:0->不能推荐
     User = "User"
     Blog = "Blog"
     Tag = "Tag"
