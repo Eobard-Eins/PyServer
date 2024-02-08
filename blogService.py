@@ -1,4 +1,5 @@
 # 博客相关服务包
 import taskService as ts
-res=ts.addTask("task2",["tag1"])
+import neo4j as neo
+res=neo.updateIDF()
 print(res)

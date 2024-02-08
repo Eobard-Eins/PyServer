@@ -45,6 +45,7 @@ print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 
 # %% 更新IDF
 import neo4j as nj
+import time
 a=time.perf_counter()
 nj.updateIDF()
 b=time.perf_counter()

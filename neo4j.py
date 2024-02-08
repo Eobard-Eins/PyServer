@@ -1,11 +1,15 @@
+import threading
 from py2neo import Graph, Node, Relationship
 import numpy as np
+from untils import Nodes, Rels
+from ThreadSafeNeo4jExecutor import ThreadSafeNeo4jExecutor
 '''
 @desc Ne04j 基础操作类；
 采用图数据库原因：便于实现协同过滤/容易拓展
 '''
 #In[0]
-g = Graph(
+
+g=Graph(
     host="127.0.0.1",  # neo4j 搭载服务器的ip地址，ifconfig可获取到
     # http_port=7474,  # neo4j 服务器监听的端口号
     user="neo4j0",  # 数据库user name，如果没有更改过，应该是neo4j
@@ -89,17 +93,21 @@ def getRatings(userId:str,k:int=12):
     res= g.run(sql).data()
     return res
 
+
 def updateIDF():#更新IDF
     sql1="match (n:Task) return count(n) as a"#获取task总数
     sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
     A=g.run(sql1).data()[0]['a']
     #print(A)
     b=g.run(sql2).data()
+    threads=[]
     for i in b:
-        k=np.log(A/(i['b']+1))
-        # 只有status为1的task才更新
-        sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(i['mn'],k)
-        g.run(sql)
+        thread=threading.Thread(target=ThreadSafeNeo4jExecutor().updateIDFOnTag,args=(i['b'],i['mn'],A))
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
+        
     print("IDF alread updated")
 
 def getIDF(tag:str):
@@ -110,22 +118,4 @@ def getIDF(tag:str):
     return np.log(A/(B+1))
     #print(A)
 # TODO:
-
-class Nodes:
-    Task = "Task"#{name:id, status:0/1} status:0->不能推荐
-    User = "User"
-    Blog = "Blog"
-    Tag = "Tag"
-
-
-
-class Rels:
-    Similarity = "Similarity"  # 相似度，user->task
-    Recommended = "Recommended"  # 推荐过，user->task/blog
-    Watched = "Watched"  # 看过,user->task/blog
-    Rating = "Rating" # 评分，user->blog
-    Own = "Own" #某个task或blog拥有tag属性  name:taskName-tageName
-    Prefer="Prefer"#user对某tag的评分
-
-
 
