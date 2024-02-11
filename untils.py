@@ -20,8 +20,6 @@ class Nodes:
     Blog = "Blog"
     Tag = "Tag"
 
-
-
 class Rels:
     Similarity = "Similarity"  # 相似度，user->task
     Recommended = "Recommended"  # 推荐过，user->task/blog
