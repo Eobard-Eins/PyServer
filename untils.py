@@ -17,16 +17,13 @@ def cos(a,b):
 class Nodes:
     Task = "Task"#{name:id, status:0/1} status:0->不能推荐
     User = "User"
-    Blog = "Blog"
     Tag = "Tag"
 
 class Rels:
-    Similarity = "Similarity"  # 相似度，user->task
     Recommended = "Recommended"  # 推荐过，user->task/blog
-    Watched = "Watched"  # 看过,user->task/blog
-    Rating = "Rating" # 评分，user->blog
     Own = "Own" #某个task或blog拥有tag属性  name:taskName-tageName
     Prefer="Prefer"#user对某tag的评分
+    
 
 
 class StatusCode:

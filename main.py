@@ -9,47 +9,66 @@ import taskService as ts
 server = flask.Flask(__name__)
 
 ## 启动命令：neo4j.bat console
+@server.route('/test', methods=['post'])
+def test():
+    tn=flask.request.form['tasks'].split(',')
+    print(type(tn))
+    return json.dumps(tn)
 
-#@desc 添加新委托，生成特征向量并计算与各用户的相似度
-@server.route('/task/addNewTask', methods=['post'])
+#@desc 添加新委托 1
+@server.route('/api/addNewTask', methods=['post'])
 def addNewTask():
-    
-    res=ts.addTask()
-    return 'Hello World'
+    tn=flask.request.form['task']
+    tlt=flask.request.form['title']
+    tags=flask.request.form['tags'].split(',')
+    res=ts.addTask(tn, tlt, tags)
+    return json.dumps(res.__dict__)
 
-#@desc 删除委托
-@server.route('/task/disableTask', methods=['delete'])
+#@desc 标记推荐 1
+@server.route('/api/markRecommend', methods=['post'])
+def markRecommend():
+    tn=flask.request.form['tasks'].split(',')
+    u=flask.request.form['user']
+    res=ts.markRecommend(u, tn)
+    return json.dumps(res.__dict__)
+
+#@desc 禁用委托 1
+@server.route('/api/disableTask', methods=['put'])
 def disableTask():
-    return 'Hello World'
+    tn=flask.request.args.get('task')
+    res=ts.disableTask(tn)
+    return json.dumps(res.__dict__)
 
-#@desc 获取推荐列表
-@server.route('/task/getTasks', methods=['get'])
+#@desc 获取推荐列表 1
+@server.route('/api/getTasks', methods=['get'])
 def getTasks():
-    return 'Hello World'
+    u=flask.request.args.get('user')
+    s=flask.request.args.get('search')
+    k=flask.request.args.get('k')
+    res=ts.getTasks(u,s,int(k))
+    return json.dumps(res.__dict__)
 
-#@desc 标记task为看过
-@server.route('/task/addWatched', methods=['post','put'])
-def addWatched():
-    return 'Hello World'
+#@desc 更新IDF 1
+@server.route('/api/updateIDF', methods=['put'])
+def updateIDF():
+    res=ts.updateIDF()
+    return json.dumps(res.__dict__)
+
+#@desc 更新用户偏好 1
+@server.route('/api/updatePrefer', methods=['put'])
+def updatePrefer():
+    u=flask.request.args.get('user')
+    do=flask.request.args.get('do')
+    tn=flask.request.args.get('task')
+    res=ts.updatePrefer(u,int(do),tn)
+    return json.dumps(res.__dict__)
+
+#@desc 添加用户 1
+@server.route('/api/addUser', methods=['post'])
+def addUser():
+    u=flask.request.args.get('user')
+    res=ts.addUser(u)
+    return json.dumps(res.__dict__)
 
 
-
-#@desc 添加新博客
-@server.route('/blog/addNewBlog', methods=['post'])
-def addNewBlog():
-    return 'Hello World'
-
-#@desc 删除博客
-@server.route('/blog/delNewBlog', methods=['delete'])
-def delNewBlog():
-    return 'Hello World'
-
-#@desc 修改对某博客的评分
-@server.route('/blog/updateRating', methods=['put','post'])
-def updateRating():
-    return 'Hello World'
-
-#@desc 获取博客推荐列表
-@server.route('/blog/getBlogs', methods=['get'])
-def getBlogs():
-    return 'Hello World'
+server.run(host='127.0.0.1', port=8888, debug=False)

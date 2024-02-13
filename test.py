@@ -55,7 +55,7 @@ print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 import time
 import neo4j as nj
 a=time.perf_counter()
-res=nj.Neo4j.getRatings("user2")
+res=nj.Neo4j().getRatings("user1")
 for i in res:
     print(i)
 b=time.perf_counter()
@@ -151,11 +151,19 @@ print("success rate:"+str(success/num))
 # %%
 import neo4j as nj
 import time
+import taskService as ts
 # 记录当前时间
 a=time.perf_counter()
-nj.Neo4j().updateIDF()
+ts.updatePrefer("user-Test31",1,"task98280")
 b=time.perf_counter()
 
 print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 
+# %%
+import neo4j as nj
+import time
+import taskService as ts
+from untils import cos,Nodes,Rels
+res=ts.addUser("p6")
+print(res.__dict__)
 # %%

@@ -1,6 +1,7 @@
 import threading
 from py2neo import Graph, Node, Relationship
 import numpy as np
+import jieba
 '''
 @desc Ne04j 基础操作类；
 采用图数据库原因：便于实现协同过滤/容易拓展
@@ -14,18 +15,30 @@ class Neo4j:
             user="neo4j0",  # 数据库user name，如果没有更改过，应该是neo4j
             password="Server85426")
 
-    def newNode(self, label, name, info={}):
-        node = Node(label, name=name)# 节点name属性即ID
-        for i in info:
-            node[i] = info[i]
-        self.g.create(node)
+    def newNode(self, label, name:str, info:dict={}):
+        s=""            
+        f=1
+        for key,value in info.items():
+            if f:
+                s+="set "
+                f=0
+            else:
+                s+=", "
+            if type(value) is str:
+                s=s+'n.%s="%s"'%(key,value)
+            else:
+                s=s+'n.%s=%s'%(key,value)
+                
+        sql='merge (n:%s { name:"%s"}) %s return count(n)'%(label,name,s)
+        print(sql)
+        self.g.run(sql)
     def newRelationship(self, startType, endType, startNode, endNode, relType, relName, relValue):
         query=""
         if type(relValue) is str:
-            query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s',value:'%s'}]->(q)" % (
+            query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s'}]->(q) set rel.value='%s'" % (
             startType, startNode, endType, endNode, relType, relName, relValue)
         else:
-            query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s',value:%s}]->(q)" % (
+            query = "match(p:%s{ name:'%s'}) merge(q:%s {name:'%s'}) merge (p)-[rel:%s{name:'%s'}]->(q) set rel.value=%s" % (
             startType, startNode, endType, endNode, relType, relName, relValue)
         self.g.run(query)
 
@@ -58,15 +71,8 @@ class Neo4j:
             startType, relType, endType, startNode, relName, endNode)
         self.g.run(sql)
 
-    def setNodeInfo(self,nodeName, nodeType, info={}):
-        for i in info:
-            if type(info[i]) is str:
-                #print(info[i])
-                sql = 'match (p:{0}) where p.name="{1}" set p.{2}="{3}"'.format(nodeType, nodeName, i, info[i])
-            else:
-                sql='match (p:{0}) where p.name="{1}" set p.{2}={3}'.format(nodeType, nodeName, i, info[i])
-            #print(sql)
-            self.g.run(sql)
+    def setNodeInfo(self,nodeType, nodeName, info={}):
+        self.newNode(nodeType, nodeName, info)
 
     def delNode(self,nodeName, nodeType):
         sql = "match (p:{0}) where p.name='{1}' detach delete p".format(nodeType, nodeName)
@@ -86,9 +92,16 @@ class Neo4j:
         else:
             return True
         
-    def getRatings(self,userId:str,k:int=12):
+    def getRatings(self,userId:str,search:str="",k:int=12):
         # 只有status为1的task才推荐
-        sql="match (n:Task)-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User) where k.name='{0}' and n.status=1 return n.name as taskId,sum(a.value*b.value) as value order by value desc limit {1}".format(userId,k)
+        
+        sql='''
+            match (n:Task{ status:1})-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User{name:"%s"}) 
+            where n.search=~'%s' and not (k)-[:Recommended]->(n) 
+            return n.name as taskId,sum(a.value*b.value) as value 
+            order by value desc 
+            limit %s'''%(userId,search,k)
+        #print(sql)
         res= self.g.run(sql).data()
         return res
 
@@ -134,22 +147,15 @@ class Neo4j:
         res=self.g.run(sql).data()
         return res
     
-# #线程安全的neo4j操作类
-# class ThreadSafeNeo4jExecutor:
-#     def __init__(self):
-#         self.g=Graph(
-#             host="127.0.0.1",  # neo4j 搭载服务器的ip地址，ifconfig可获取到
-#             # http_port=7474,  # neo4j 服务器监听的端口号
-#             user="neo4j0",  # 数据库user name，如果没有更改过，应该是neo4j
-#             password="Server85426")
-#     def updateIDFOnTag(self, num,tag,A):
-#         try:
-#             #name = threading.current_thread().getName()
-#             #print(f"线程{tag}开始执行，线程名称：{name}")
-#             k=np.log(A/(num+1))
-#             # 只有status为1的task才更新
-#             sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(tag,k)
-#             self.g.run(sql)
-#             #print(f"线程{tag}执行结束")
-#         except:
-#             print("线程{0}执行出错".format(tag))
+    def getIDFsOfTask(self,task:str):
+        sql='match (n:Task)-[a:Own]->(t:Tag) where n.name="{0}" return t.name as name,a.value as value'.format(task)
+        res=self.g.run(sql).data()
+        return res
+    def getPreferOfUserToTag(self,user:str,tag:str)->float:
+        sql='match (u:User)-[a:Prefer]->(t:Tag) where u.name="{0}" and t.name="{1}" return a.value as value'.format(user,tag)
+        res=self.g.run(sql).data()
+        if len(res) == 0:
+            return 0.0
+        return res[0]['value']
+
+    
