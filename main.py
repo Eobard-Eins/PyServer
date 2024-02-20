@@ -32,14 +32,6 @@ def addNewTask():
         res=ts.addTask(tn, tlt, False, float(la), float(lo), tags)
     return json.dumps(res.__dict__)
 
-#@desc 标记推荐 1
-@server.route('/api/markRecommend', methods=['post'])
-def markRecommend():
-    tn=flask.request.form['tasks'].split(',')
-    u=flask.request.form['user']
-    res=ts.markRecommend(u, tn)
-    return json.dumps(res.__dict__)
-
 #@desc 禁用委托 1
 @server.route('/api/disableTask', methods=['put'])
 def disableTask():
@@ -57,12 +49,6 @@ def getTasks():
     latitude=flask.request.form.get('latitude')
     maxS=flask.request.form.get('s')
     res=ts.getTasks(u,float(longitude),float(latitude),float(maxS),s,int(k))
-    return json.dumps(res.__dict__)
-
-#@desc 更新IDF 1
-@server.route('/api/updateIDF', methods=['put'])
-def updateIDF():
-    res=ts.updateIDF()
     return json.dumps(res.__dict__)
 
 #@desc 更新用户偏好 1

@@ -37,7 +37,7 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
             flag=True
             for i in jieba.cut_for_search(search):
                 if flag:
-                    rep=res+".*"+i+".*"
+                    rep=rep+".*"+i+".*"
                     flag=False
                 else:
                     rep=rep+"|.*"+i+".*"
@@ -71,15 +71,6 @@ def updatePrefer(userName:str,do:int,taskName:str)->Res:
             case 4:
                 beta=-0.5
         g.updatePrefer(user=userName,task=taskName,alpha=alpha,beta=beta)
-        return Res.Success(True)
-    except:
-        return Res.Error(StatusCode.neo4jError)
-    
-def markRecommend(user:str, tasks:list[str]):
-    try:
-        g=nj.Neo4j()
-        for task in tasks:
-            g.newRelationship(Nodes.User, Nodes.Task, user, task, Rels.Recommended, user+"-"+task, 1)
         return Res.Success(True)
     except:
         return Res.Error(StatusCode.neo4jError)
