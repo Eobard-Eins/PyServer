@@ -55,7 +55,7 @@ print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 import time
 import neo4j as nj
 a=time.perf_counter()
-res=nj.Neo4j().getRatings("user1")
+res=nj.Neo4j().getRatings("j0",121.47371,31.231556,10,k=1)
 for i in res:
     print(i)
 b=time.perf_counter()
@@ -154,7 +154,7 @@ import time
 import taskService as ts
 # 记录当前时间
 a=time.perf_counter()
-ts.updatePrefer("user-Test31",1,"task98280")
+ts.updatePrefer("j0",1,"k2")
 b=time.perf_counter()
 
 print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
@@ -166,4 +166,12 @@ import taskService as ts
 from untils import cos,Nodes,Rels
 res=ts.addUser("p6")
 print(res.__dict__)
+# %%
+sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
+            where u.name="{0}" and k.name="{1}" 
+            merge (u)-[a:Prefer{{name:u.name+"-"+t.name}}]->(t)
+            on create set a.value={2}*b.value
+            on match set a.value=case when a.value is null then {2}*b.value else {3}*a.value+{2}*b.value end
+            return a'''.format("user","task",0.5,1)
+print(sql)
 # %%

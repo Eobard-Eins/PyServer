@@ -92,15 +92,29 @@ class Neo4j:
         else:
             return True
         
-    def getRatings(self,userId:str,search:str="",k:int=12):
+    def getRatings(self, userId:str, longitude:float, latitude:float, s:float=41000.0, search:str=".*",k:int=12):
         # 只有status为1的task才推荐
-        
+        #Haversine公式计算距离
         sql='''
             match (n:Task{ status:1})-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User{name:"%s"}) 
-            where n.search=~'%s' and not (k)-[:Recommended]->(n) 
-            return n.name as taskId,sum(a.value*b.value) as value 
-            order by value desc 
-            limit %s'''%(userId,search,k)
+            with n,a,m,b,k,
+                2 * 6371 * ASIN(
+                    SQRT(
+                    SIN((n.latitude - %s) * PI() / 360)^2 +
+                    COS(%s * PI() / 180) *
+                    COS(n.latitude * PI() / 180) *
+                    SIN((n.longitude - %s) * PI() / 360)^2
+                    )
+                ) as distance,(n.latitude=91) as onLine
+            where (onLine or distance<=%s)
+              and n.search=~"%s"
+              and not (k)-[:Recommended]->(n) 
+            with n,k,sum(a.value*b.value) as value, distance, onLine
+                order by value desc 
+                limit %s
+            merge (k)-[rec:Recommended{name:k.name+"-"+n.name}]->(n)
+            return n.name as taskId, value, distance, onLine
+            '''%(userId,latitude,latitude,longitude,s,search,k)
         #print(sql)
         res= self.g.run(sql).data()
         return res
@@ -157,5 +171,16 @@ class Neo4j:
         if len(res) == 0:
             return 0.0
         return res[0]['value']
+    
+    def updatePrefer(self,user:str,task:str,beta:float,alpha:float=1.0):
+        sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
+            where u.name="{0}" and k.name="{1}" 
+            merge (u)-[a:Prefer{{name:u.name+"-"+t.name}}]->(t)
+            on create set a.value={2}*b.value
+            on match set a.value=case when a.value is null then {2}*b.value else {3}*a.value+{2}*b.value end
+            return a'''.format(user,task,beta,alpha)
+        #print(sql)
+        res = self.g.run(sql).data()
+        return res
 
     

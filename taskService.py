@@ -30,7 +30,7 @@ def disableTask(taskName:str):
     except:
         return Res.Error(StatusCode.neo4jError)
     
-def getTasks(userName:str,search:str, k:int):
+def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str, k:int):
     try:
         g=nj.Neo4j()
         rep=".*"
@@ -45,11 +45,9 @@ def getTasks(userName:str,search:str, k:int):
         else:
             print("search is empty")
         
-        tasks = g.getRatings(userName, rep, k)
-        res=[]
-        for task in tasks:
-            res.append(task['taskId'])
-        return Res.Success(res)
+        tasks = g.getRatings(userName,longitude,latitude, maxS, rep, k)
+
+        return Res.Success(tasks)
     except:
         return Res.Error(StatusCode.neo4jError)
     
@@ -60,7 +58,6 @@ def updatePrefer(userName:str,do:int,taskName:str)->Res:
     '''
     try:
         g=nj.Neo4j()
-        temp=g.getIDFsOfTask(taskName)
         alpha=1.0
         beta=0.0
         match do:
@@ -74,10 +71,7 @@ def updatePrefer(userName:str,do:int,taskName:str)->Res:
                 beta=0.8
             case 4:
                 beta=-0.5
-        for i in temp:
-            k=g.getPreferOfUserToTag(userName,i['name'])
-            value=alpha*k+beta*i['value']
-            g.newRelationship(Nodes.User, Nodes.Tag, userName, i['name'], Rels.Prefer, userName+"-"+i['name'], value)
+        g.updatePrefer(user=userName,task=taskName,alpha=alpha,beta=beta)
         return Res.Success(True)
     except:
         return Res.Error(StatusCode.neo4jError)
