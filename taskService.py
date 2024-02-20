@@ -12,14 +12,6 @@ def addTask(taskName:str,title:str,onLine:bool,latitude:float=91.0, longitude:fl
         return Res.Success(True)
     except:
         return Res.Error(StatusCode.neo4jError)
-    
-def updateIDF():
-    try:
-        g=nj.Neo4j()
-        g.updateIDF()
-        return Res.Success(True)
-    except:
-        return Res.Error(StatusCode.neo4jError)
 
 def disableTask(taskName:str):
     try:
