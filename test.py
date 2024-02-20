@@ -47,7 +47,7 @@ print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 import neo4j as nj
 import time
 a=time.perf_counter()
-nj.Neo4j.updateIDF()
+nj.Neo4j().updateIDF()
 b=time.perf_counter()
 print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
 
@@ -154,7 +154,7 @@ import time
 import taskService as ts
 # 记录当前时间
 a=time.perf_counter()
-ts.updatePrefer("j0",1,"k2")
+ts.addTask("tkf","testNew",True,tags=["l1",'l2','l3'])
 b=time.perf_counter()
 
 print(f"程序运行时间为: {(b-a)*1000:.6f} ms")
@@ -164,14 +164,18 @@ import neo4j as nj
 import time
 import taskService as ts
 from untils import cos,Nodes,Rels
-res=ts.addUser("p6")
+res=ts.addTask("tkf","testNew",["l1",'l2','l3'])
 print(res.__dict__)
 # %%
-sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
-            where u.name="{0}" and k.name="{1}" 
-            merge (u)-[a:Prefer{{name:u.name+"-"+t.name}}]->(t)
-            on create set a.value={2}*b.value
-            on match set a.value=case when a.value is null then {2}*b.value else {3}*a.value+{2}*b.value end
-            return a'''.format("user","task",0.5,1)
+sql='''
+merge (newTk:Task {{name:"{0}"}})
+set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
+with {4} as tags, newTk
+foreach(tag in tags|
+    merge(toTag:Tag {{name:tag}}) 
+    merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
+    set rel.value=1
+)
+'''.format("tkf", "tkf", 11, 11, str(["l1",'l2','l3']))
 print(sql)
 # %%

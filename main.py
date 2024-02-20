@@ -20,8 +20,16 @@ def test():
 def addNewTask():
     tn=flask.request.form['task']
     tlt=flask.request.form['title']
+    la=flask.request.form['latitude']
+    lo=flask.request.form['longitude']
+    ol=flask.request.form['onLine']
     tags=flask.request.form['tags'].split(',')
-    res=ts.addTask(tn, tlt, tags)
+    if int(ol)==1:
+        res=ts.addTask(tn, tlt, True, tags=tags)
+    else:
+        if len(la)==0 or len(lo)==0:
+            return json.dumps(untils.Res.Error(untils.StatusCode.neo4jError).__dict__)
+        res=ts.addTask(tn, tlt, False, float(la), float(lo), tags)
     return json.dumps(res.__dict__)
 
 #@desc 标记推荐 1

@@ -30,7 +30,7 @@ class Neo4j:
                 s=s+'n.%s=%s'%(key,value)
                 
         sql='merge (n:%s { name:"%s"}) %s return count(n)'%(label,name,s)
-        print(sql)
+        #print(sql)
         self.g.run(sql)
     def newRelationship(self, startType, endType, startNode, endNode, relType, relName, relValue):
         query=""
@@ -121,19 +121,27 @@ class Neo4j:
 
 
     def updateIDF(self):#更新IDF
-        sql1="match (n:Task) return count(n) as a"#获取task总数
-        sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
-        A=self.g.run(sql1).data()[0]['a']
-        #print(A)
-        b=self.g.run(sql2).data()
-        threads=[]
-        for i in b:
-            thread=threading.Thread(target=Neo4j().updateIDFOnTag,args=(i['b'],i['mn'],A))
-            threads.append(thread)
-            thread.start()
-        for thread in threads:
-            thread.join()
-            
+        # sql1="match (n:Task) return count(n) as a"#获取task总数
+        # sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
+        # A=self.g.run(sql1).data()[0]['a']
+        # #print(A)
+        # b=self.g.run(sql2).data()
+        # threads=[]
+        # for i in b:
+        #     thread=threading.Thread(target=Neo4j().updateIDFOnTag,args=(i['b'],i['mn'],A))
+        #     threads.append(thread)
+        #     thread.start()
+        # for thread in threads:
+        #     thread.join()
+        sql='''
+            match (n:Task)
+            with count(n) as a
+            match (n)-[o:Own]->(m:Tag) 
+            with m,log(a/(count(n)+1)) as newValue
+            match (tk:Task{status:1})-[k:Own]->(m)
+            set k.value=newValue
+            '''
+        self.g.run(sql)
         print("IDF alread updated")
 
     def updateIDFOnTag(self, num,tag,A):
@@ -182,5 +190,20 @@ class Neo4j:
         #print(sql)
         res = self.g.run(sql).data()
         return res
+    
+    def newTask(self,task:str,title:str,latitude:float,longitude:float,tags:list[str]):
+        sql='''
+            merge (newTk:Task {{name:"{0}"}})
+            set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
+            with {4} as tags, newTk
+            foreach(tag in tags|
+                merge(toTag:Tag {{name:tag}}) 
+                merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
+                set rel.value=1
+            )
+            '''.format(task, title, latitude, longitude, str(tags))
+        print(sql)
+        self.g.run(sql)
+
 
     

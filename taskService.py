@@ -1,15 +1,14 @@
 import neo4j as nj
 from untils import Nodes, Rels, Res, StatusCode
 import jieba
-def addTask(taskName:str,title:str, tags:list=[])->Res:
+def addTask(taskName:str,title:str,onLine:bool,latitude:float=91.0, longitude:float=181.0, tags:list=[])->Res:
     try:
         g=nj.Neo4j()
         s=title+" "
         for i in tags:
             s=s+"#"+i+" "
-        g.newNode(Nodes.Task, taskName, {"status":1,"search":s})
-        for tag in tags:
-            g.newRelationship(Nodes.Task, Nodes.Tag, taskName, tag, Rels.Own, taskName+"-"+tag, g.getIDF(tag))
+        g.newTask(taskName, s, latitude, longitude,tags)
+        g.updateIDF()
         return Res.Success(True)
     except:
         return Res.Error(StatusCode.neo4jError)
