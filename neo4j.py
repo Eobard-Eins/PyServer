@@ -71,23 +71,49 @@ class Neo4j:
         #print(sql)
         res= self.g.run(sql).data()
         return res
-
-
     def updateIDF(self):#更新IDF
-        sql='''
-            match (n:Task)
-            with count(n) as a
-            match (n)-[o:Own]->(m:Tag) 
-            with m,log(a/(count(n)+1)) as newValue
-            match (tk:Task{status:1})-[k:Own]->(m)
-            set k.value=newValue
-            '''
-        self.g.run(sql)
+        sql1="match (n:Task) return count(n) as a"#获取task总数
+        sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
+        A=self.g.run(sql1).data()[0]['a']
+        #print(A)
+        b=self.g.run(sql2).data()
+        threads=[]
+        for i in b:
+            thread=threading.Thread(target=Neo4j().updateIDFOnTag,args=(i['b'],i['mn'],A))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+            
         print("IDF alread updated")
+
+    def updateIDFOnTag(self, num,tag,A):
+        try:
+            #name = threading.current_thread().getName()
+            #print(f"线程{tag}开始执行，线程名称：{name}")
+            k=np.log(A/(num+1))
+            # 只有status为1的task才更新
+            sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(tag,k)
+            self.g.run(sql)
+            #print(f"线程{tag}执行结束")
+        except:
+            print("线程{0}执行出错".format(tag))
+
+    # def updateIDF(self):#更新IDF
+    #     sql='''
+    #         match (n:Task)
+    #         with count(n) as a
+    #         match (n)-[o:Own]->(m:Tag) 
+    #         with m,log(a/(count(n)+1)) as newValue
+    #         match (tk:Task{status:1})-[k:Own]->(m)
+    #         set k.value=newValue
+    #         '''
+    #     self.g.run(sql)
+    #     print("IDF alread updated")
     
-    def updatePrefer(self,user:str,task:str,beta:float,alpha:float=1.0):
+    def updatePrefer(self,user:str,task:int,beta:float,alpha:float=1.0):
         sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
-            where u.name="{0}" and k.name="{1}" 
+            where u.name="{0}" and k.name={1} 
             merge (u)-[a:Prefer{{name:u.name+"-"+t.name}}]->(t)
             on create set a.value={2}*b.value
             on match set a.value=case when a.value is null then {2}*b.value else {3}*a.value+{2}*b.value end
@@ -96,9 +122,9 @@ class Neo4j:
         res = self.g.run(sql).data()
         return res
     
-    def newTask(self,task:str,search:str,latitude:float,longitude:float,tags:list[str]):
+    def newTask(self,task:int,search:str,latitude:float,longitude:float,tags:list[str]):
         sql='''
-            merge (newTk:Task {{name:"{0}"}})
+            merge (newTk:Task {{name:{0}}})
             set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
             with {4} as tags, newTk
             foreach(tag in tags|
@@ -107,7 +133,7 @@ class Neo4j:
                 set rel.value=1
             )
             '''.format(task, search, latitude, longitude, str(tags))
-        print(sql)
+        #print(sql)
         self.g.run(sql)
 
 
