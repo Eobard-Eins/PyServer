@@ -96,7 +96,7 @@ class Neo4j:
         res = self.g.run(sql).data()
         return res
     
-    def newTask(self,task:str,title:str,latitude:float,longitude:float,tags:list[str]):
+    def newTask(self,task:str,search:str,latitude:float,longitude:float,tags:list[str]):
         sql='''
             merge (newTk:Task {{name:"{0}"}})
             set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
@@ -106,7 +106,7 @@ class Neo4j:
                 merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
                 set rel.value=1
             )
-            '''.format(task, title, latitude, longitude, str(tags))
+            '''.format(task, search, latitude, longitude, str(tags))
         print(sql)
         self.g.run(sql)
 
