@@ -42,12 +42,12 @@ def disableTask():
 #@desc 获取推荐列表 1
 @server.route('/api/getTasks', methods=['get'])
 def getTasks():
-    u=flask.request.form.get('user')
-    s=flask.request.form.get('search')
-    k=flask.request.form.get('k')
-    longitude=flask.request.form.get('longitude')
-    latitude=flask.request.form.get('latitude')
-    maxS=flask.request.form.get('s')
+    u=flask.request.args.get('user')
+    s=flask.request.args.get('search')
+    k=flask.request.args.get('k')
+    longitude=flask.request.args.get('longitude')
+    latitude=flask.request.args.get('latitude')
+    maxS=flask.request.args.get('s')
     res=ts.getTasks(u,float(longitude),float(latitude),float(maxS),s,int(k))
     return json.dumps(res.__dict__)
 

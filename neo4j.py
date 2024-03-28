@@ -28,8 +28,12 @@ class Neo4j:
                 s=s+'n.%s="%s"'%(key,value)
             else:
                 s=s+'n.%s=%s'%(key,value)
-                
-        sql='merge (n:%s { name:"%s"}) %s return count(n)'%(label,name,s)
+
+        sql=''
+        if type(name) is str:
+            sql='merge (n:%s { name:"%s"}) %s return count(n)'%(label,name,s)
+        else:
+            sql='merge (n:%s { name:%s}) %s return count(n)'%(label,name,s)
         #print(sql)
         self.g.run(sql)
 
@@ -59,15 +63,19 @@ class Neo4j:
                     SIN((n.longitude - %s) * PI() / 360)^2
                     )
                 ) as distance,(n.latitude=91) as onLine
-            where (onLine or distance<=%s)
-              and n.search=~"%s"
+            
+            match (tg:Tag)
+            where (n.search=~"%s" or (tg.name=~"%s" and (tg)<-[:Own]-(n)))
+              and (onLine or distance<=%s)
               and not (k)-[:Recommended]->(n) 
+
             with n,k,sum(a.value*b.value) as value, distance, onLine
                 order by value desc 
                 limit %s
+
             merge (k)-[rec:Recommended{name:k.name+"-"+n.name}]->(n)
             return n.name as taskId, value, distance, onLine
-            '''%(userId,latitude,latitude,longitude,s,search,k)
+            '''%(userId,latitude,latitude,longitude,search,search,s,k)
         #print(sql)
         res= self.g.run(sql).data()
         return res
@@ -85,7 +93,7 @@ class Neo4j:
         for thread in threads:
             thread.join()
             
-        print("IDF alread updated")
+        #print("IDF alread updated")
 
     def updateIDFOnTag(self, num,tag,A):
         try:

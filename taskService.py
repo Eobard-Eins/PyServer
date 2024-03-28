@@ -4,10 +4,10 @@ import jieba
 def addTask(taskId:int,title:str,onLine:bool,latitude:float=91.0, longitude:float=181.0, tags:list=[])->Res:
     try:
         g=nj.Neo4j()
-        s=title+" "
-        for i in tags:
-            s=s+"#"+i+" "
-        g.newTask(taskId, s, latitude, longitude,tags)
+        # s=title+" "
+        # for i in tags:
+        #     s=s+"#"+i+" "
+        g.newTask(taskId, title, latitude, longitude,tags)
         g.updateIDF()
         return Res.Success(True)
     except:
@@ -29,7 +29,7 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
             flag=True
             for i in jieba.cut_for_search(search):
                 if flag:
-                    rep=rep+".*"+i+".*"
+                    rep=rep+i+".*"
                     flag=False
                 else:
                     rep=rep+"|.*"+i+".*"

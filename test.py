@@ -179,3 +179,15 @@ foreach(tag in tags|
 '''.format("tkf", "tkf", 11, 11, str(["l1",'l2','l3']))
 print(sql)
 # %%
+import jieba
+rep=".*"
+flag=True
+for i in jieba.cut_for_search("背景音乐"):
+    if flag:
+        rep=rep+i+".*"
+        flag=False
+    else:
+        rep=rep+"|.*"+i+".*"
+
+print(rep)
+# %%
