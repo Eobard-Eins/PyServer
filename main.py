@@ -18,6 +18,7 @@ def test():
 #@desc 添加新委托 1
 @server.route('/api/addNewTask', methods=['post'])
 def addNewTask():
+    u=flask.request.form['user']
     tn=flask.request.form['task']
     tlt=flask.request.form['title']
     la=flask.request.form['latitude']
@@ -25,11 +26,11 @@ def addNewTask():
     ol=flask.request.form['onLine']
     tags=flask.request.form['tags'].split(',')
     if ol=='true':
-        res=ts.addTask(tn, tlt, True, tags=tags)
+        res=ts.addTask(u, int(tn), tlt, True, tags=tags)
     else:
         if len(la)==0 or len(lo)==0:
             return json.dumps(untils.Res.Error(untils.StatusCode.neo4jError).__dict__)
-        res=ts.addTask(int(tn), tlt, False, float(la), float(lo), tags)
+        res=ts.addTask(u, int(tn), tlt, False, float(la), float(lo), tags)
     return json.dumps(res.__dict__)
 
 #@desc 禁用委托 1

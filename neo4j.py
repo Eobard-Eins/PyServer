@@ -52,6 +52,43 @@ class Neo4j:
     def getRatings(self, userId:str, longitude:float, latitude:float, s:float=41000.0, search:str=".*",k:int=12):
         # 只有status为1的task才推荐
         #Haversine公式计算距离
+        sql0='''
+            match (u:User{name:"%s"})-[:Prefer]->(t:Tag)
+            return count(t) as flag
+        '''%(userId)
+        f=self.g.run(sql0).data()
+
+        if f[0]['flag']==0:
+            print("No Prefer")
+            sql1='''
+            match (n:Task{ status:1})
+            with n,
+                2 * 6371 * ASIN(
+                    SQRT(
+                    SIN((n.latitude - %s) * PI() / 360)^2 +
+                    COS(%s * PI() / 180) *
+                    COS(n.latitude * PI() / 180) *
+                    SIN((n.longitude - %s) * PI() / 360)^2
+                    )
+                ) as distance,(n.latitude=91) as onLine
+            match (k:User{name:"%s"})
+            with n,k,distance,onLine
+            match (tg:Tag)
+            where (n.search=~"%s" or (tg.name=~"%s" and (tg)<-[:Own]-(n)))
+              and (onLine or distance<=%s)
+              and not (k)-[:Recommended]->(n) 
+
+            with n,k,rand() as value, distance, onLine
+            order by value desc 
+            limit %s
+
+            merge (k)-[rec:Recommended{name:k.name+"-"+n.name}]->(n)
+            return n.name as taskId, value, distance, onLine
+            '''%(latitude,latitude,longitude,userId,search,search,s,k)
+            #print(sql1)
+            res= self.g.run(sql1).data()
+            return res
+        
         sql='''
             match (n:Task{ status:1})-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User{name:"%s"}) 
             with n,a,m,b,k,
@@ -76,7 +113,7 @@ class Neo4j:
             merge (k)-[rec:Recommended{name:k.name+"-"+n.name}]->(n)
             return n.name as taskId, value, distance, onLine
             '''%(userId,latitude,latitude,longitude,search,search,s,k)
-        #print(sql)
+        print(sql)
         res= self.g.run(sql).data()
         return res
     def updateIDF(self):#更新IDF
@@ -130,7 +167,7 @@ class Neo4j:
         res = self.g.run(sql).data()
         return res
     
-    def newTask(self,task:int,search:str,latitude:float,longitude:float,tags:list[str]):
+    def newTask(self,user:str,task:int,search:str,latitude:float,longitude:float,tags:list[str]):
         sql='''
             merge (newTk:Task {{name:{0}}})
             set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
@@ -140,7 +177,8 @@ class Neo4j:
                 merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
                 set rel.value=1
             )
-            '''.format(task, search, latitude, longitude, str(tags))
+            merge (u:User{{name:"{5}"}})-[:Recommended{name:newTk.name+"-"+newTk.name}]->(newTk)
+            '''.format(task, search, latitude, longitude, str(tags),user)
         #print(sql)
         self.g.run(sql)
 

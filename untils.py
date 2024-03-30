@@ -52,7 +52,7 @@ class StatusCode:
     netError = 1300  # 网络错误
     ossError = 1301  # Oss服务器错误
     infoMiss = 1302  # 传输信息缺失
-    neo4jError = 1303  # neo4j数据库错误
+    neo4jError = 1305  # neo4j数据库错误
 
 
     # 不存在状态码

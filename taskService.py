@@ -1,13 +1,14 @@
 import neo4j as nj
 from untils import Nodes, Rels, Res, StatusCode
 import jieba
-def addTask(taskId:int,title:str,onLine:bool,latitude:float=91.0, longitude:float=181.0, tags:list=[])->Res:
+def addTask(user:str,taskId:int,title:str,onLine:bool,latitude:float=91.0, longitude:float=181.0, tags:list=[])->Res:
     try:
         g=nj.Neo4j()
         # s=title+" "
         # for i in tags:
         #     s=s+"#"+i+" "
-        g.newTask(taskId, title, latitude, longitude,tags)
+        g.newTask(user,taskId, title, latitude, longitude,tags)
+        
         g.updateIDF()
         return Res.Success(True)
     except:
@@ -37,7 +38,7 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
             print("search is empty")
         
         tasks = g.getRatings(userName,longitude,latitude, maxS, rep, k)
-
+        print(tasks)
         return Res.Success(tasks)
     except:
         return Res.Error(StatusCode.neo4jError)
