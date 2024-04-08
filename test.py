@@ -191,3 +191,16 @@ for i in jieba.cut_for_search("背景音乐"):
 
 print(rep)
 # %%
+sql='''
+            merge (newTk:Task{ name:%s})
+            set newTk.status=1, newTk.search="%s", newTk.latitude=%s, newTk.longitude=%s
+            with %s as tags, newTk
+            foreach(tag in tags|
+                merge(toTag:Tag {{name:tag}}) 
+                merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
+                set rel.value=1
+            )
+            merge (u:User{{name:"%s"}})-[:Recommended{name:newTk.name+"-"+newTk.name}]->(newTk)
+            '''%(1, "search", 1, 1, str(["tags"]),"user")
+print(sql)
+# %%

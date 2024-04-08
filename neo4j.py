@@ -59,6 +59,7 @@ class Neo4j:
         f=self.g.run(sql0).data()
 
         if f[0]['flag']==0:
+            #初次推荐
             print("No Prefer")
             sql1='''
             match (n:Task{ status:1})
@@ -89,6 +90,7 @@ class Neo4j:
             res= self.g.run(sql1).data()
             return res
         
+        #一般情况
         sql='''
             match (n:Task{ status:1})-[a:Own]->(m:Tag)<-[b:Prefer]-(k:User{name:"%s"}) 
             with n,a,m,b,k,
@@ -116,45 +118,45 @@ class Neo4j:
         print(sql)
         res= self.g.run(sql).data()
         return res
-    def updateIDF(self):#更新IDF
-        sql1="match (n:Task) return count(n) as a"#获取task总数
-        sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
-        A=self.g.run(sql1).data()[0]['a']
-        #print(A)
-        b=self.g.run(sql2).data()
-        threads=[]
-        for i in b:
-            thread=threading.Thread(target=Neo4j().updateIDFOnTag,args=(i['b'],i['mn'],A))
-            threads.append(thread)
-            thread.start()
-        for thread in threads:
-            thread.join()
-            
-        #print("IDF alread updated")
-
-    def updateIDFOnTag(self, num,tag,A):
-        try:
-            #name = threading.current_thread().getName()
-            #print(f"线程{tag}开始执行，线程名称：{name}")
-            k=np.log(A/(num+1))
-            # 只有status为1的task才更新
-            sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(tag,k)
-            self.g.run(sql)
-            #print(f"线程{tag}执行结束")
-        except:
-            print("线程{0}执行出错".format(tag))
-
     # def updateIDF(self):#更新IDF
-    #     sql='''
-    #         match (n:Task)
-    #         with count(n) as a
-    #         match (n)-[o:Own]->(m:Tag) 
-    #         with m,log(a/(count(n)+1)) as newValue
-    #         match (tk:Task{status:1})-[k:Own]->(m)
-    #         set k.value=newValue
-    #         '''
-    #     self.g.run(sql)
-    #     print("IDF alread updated")
+    #     sql1="match (n:Task) return count(n) as a"#获取task总数
+    #     sql2="match (n:Task)-[a:Own]->(m:Tag) return m.name as mn,count(n) as b"#获取拥有某个tag的task总数
+    #     A=self.g.run(sql1).data()[0]['a']
+    #     #print(A)
+    #     b=self.g.run(sql2).data()
+    #     threads=[]
+    #     for i in b:
+    #         thread=threading.Thread(target=Neo4j().updateIDFOnTag,args=(i['b'],i['mn'],A))
+    #         threads.append(thread)
+    #         thread.start()
+    #     for thread in threads:
+    #         thread.join()
+            
+    #     #print("IDF alread updated")
+
+    # def updateIDFOnTag(self, num,tag,A):
+    #     try:
+    #         #name = threading.current_thread().getName()
+    #         #print(f"线程{tag}开始执行，线程名称：{name}")
+    #         k=np.log(A/(num+1))
+    #         # 只有status为1的task才更新
+    #         sql="match (n:Task)-[a:Own]->(m:Tag) where m.name='{0}' and n.status=1 set a.value={1}".format(tag,k)
+    #         self.g.run(sql)
+    #         #print(f"线程{tag}执行结束")
+    #     except:
+    #         print("线程{0}执行出错".format(tag))
+
+    def updateIDF(self):#更新IDF
+        sql='''
+            match (n:Task)
+            with count(n) as a
+            match (n)-[o:Own]->(m:Tag) 
+            with m,log(a*1.0/(count(n)+1)) as newValue
+            match (tk:Task{status:1})-[k:Own]->(m)
+            set k.value=newValue
+            '''
+        self.g.run(sql)
+        print("IDF alread updated")
     
     def updatePrefer(self,user:str,task:int,beta:float,alpha:float=1.0):
         sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
@@ -169,17 +171,17 @@ class Neo4j:
     
     def newTask(self,user:str,task:int,search:str,latitude:float,longitude:float,tags:list[str]):
         sql='''
-            merge (newTk:Task {{name:{0}}})
-            set newTk.status=1, newTk.search="{1}", newTk.latitude={2}, newTk.longitude={3}
-            with {4} as tags, newTk
+            merge (newTk:Task{ name:%s})
+            set newTk.status=1, newTk.search="%s", newTk.latitude=%s, newTk.longitude=%s
+            with %s as tags, newTk
             foreach(tag in tags|
-                merge(toTag:Tag {{name:tag}}) 
-                merge (newTk)-[rel:Own{{name:newTk.name+"-"+tag}}]->(toTag) 
+                merge(toTag:Tag { name:tag}) 
+                merge (newTk)-[rel:Own{name:newTk.name+"-"+tag}]->(toTag) 
                 set rel.value=1
             )
-            merge (u:User{{name:"{5}"}})-[:Recommended{name:newTk.name+"-"+newTk.name}]->(newTk)
-            '''.format(task, search, latitude, longitude, str(tags),user)
-        #print(sql)
+            merge (u:User{name:"%s"})-[:Recommended{name:newTk.name+"-"+newTk.name}]->(newTk)
+            '''%(task, search, latitude, longitude, str(tags),user)
+        print(sql)
         self.g.run(sql)
 
 
