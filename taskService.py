@@ -39,6 +39,9 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
         
         tasks = g.getRatings(userName,longitude,latitude, maxS, rep, k)
         print(tasks)
+        if(len(tasks)<k):
+            t= g.getRatingsByRandom(userName,longitude,latitude, maxS, rep, k-len(tasks))
+            tasks.extend(t)
         return Res.Success(tasks)
     except:
         return Res.Error(StatusCode.neo4jError)
@@ -53,15 +56,15 @@ def updatePrefer(userName:str,do:int,taskId:int)->Res:
         alpha=1.0
         beta=0.0
         match do:
-            case 0:
+            case StatusCode.click:
                 beta=0.2
-            case 1:
+            case StatusCode.like:
                 beta=0.5
-            case 2:
+            case StatusCode.chat:
                 beta=0.8
-            case 3:
+            case StatusCode.access:
                 beta=0.8
-            case 4:
+            case StatusCode.dislike:
                 beta=-0.5
         g.updatePrefer(user=userName,task=taskId,alpha=alpha,beta=beta)
         return Res.Success(True)

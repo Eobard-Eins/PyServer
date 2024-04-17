@@ -54,6 +54,11 @@ class StatusCode:
     infoMiss = 1302  # 传输信息缺失
     neo4jError = 1305  # neo4j数据库错误
 
+    click=1500
+    like=1501
+    chat=1502
+    access=1503
+    dislike=1504
 
     # 不存在状态码
     noStatusCode = 0000  # 其他
