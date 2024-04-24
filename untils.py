@@ -61,7 +61,7 @@ class StatusCode:
     dislike=1504
 
     # 不存在状态码
-    noStatusCode = 0000  # 其他
+    error = 0000  # 其他
 
 
 

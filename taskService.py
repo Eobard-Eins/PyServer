@@ -12,7 +12,7 @@ def addTask(user:str,taskId:int,title:str,onLine:bool,latitude:float=91.0, longi
         g.updateIDF()
         return Res.Success(True)
     except:
-        return Res.Error(StatusCode.neo4jError)
+        return Res.Error(StatusCode.error)
 
 def disableTask(taskId:int):
     try:
@@ -20,7 +20,7 @@ def disableTask(taskId:int):
         g.setNodeInfo(Nodes.Task, taskId, {"status":0})
         return Res.Success(True)
     except:
-        return Res.Error(StatusCode.neo4jError)
+        return Res.Error(StatusCode.error)
     
 def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str, k:int):
     try:
@@ -44,7 +44,7 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
             tasks.extend(t)
         return Res.Success(tasks)
     except:
-        return Res.Error(StatusCode.neo4jError)
+        return Res.Error(StatusCode.error)
     
 
 def updatePrefer(userName:str,do:int,taskId:int)->Res:
@@ -69,7 +69,7 @@ def updatePrefer(userName:str,do:int,taskId:int)->Res:
         g.updatePrefer(user=userName,task=taskId,alpha=alpha,beta=beta)
         return Res.Success(True)
     except:
-        return Res.Error(StatusCode.neo4jError)
+        return Res.Error(StatusCode.error)
     
 def addUser(user:str):
     try:
@@ -77,4 +77,4 @@ def addUser(user:str):
         g.newNode(Nodes.User, user)
         return Res.Success(True)
     except:
-        return Res.Error(StatusCode.neo4jError)
+        return Res.Error(StatusCode.error)
