@@ -25,7 +25,6 @@ def addNewTask():
     lo=flask.request.form['longitude']
     ol=flask.request.form['onLine']
     tags=flask.request.form['tags'].split(',')
-    print(flask.request.form.to_dict)
     if ol=='true':
         res=ts.addTask(u, int(tn), tlt, True, tags=tags)
     else:

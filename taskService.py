@@ -34,11 +34,9 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
                     flag=False
                 else:
                     rep=rep+"|.*"+i+".*"
-        else:
-            print("search is empty")
         
         tasks = g.getRatings(userName,longitude,latitude, maxS, rep, k)
-        print(tasks)
+        print("[INFO] get tasks:"+tasks)
         if(len(tasks)<k):
             t= g.getRatingsByRandom(userName,longitude,latitude, maxS, rep, k-len(tasks))
             tasks.extend(t)

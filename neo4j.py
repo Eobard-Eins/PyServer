@@ -150,7 +150,6 @@ class Neo4j:
             set k.value=newValue
             '''
         self.g.run(sql)
-        print("IDF alread updated")
     
     def updatePrefer(self,user:str,task:int,beta:float,alpha:float=1.0):
         sql='''match (u:User),(t:Tag)<-[b:Own]-(k:Task)
