@@ -36,7 +36,7 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
                     rep=rep+"|.*"+i+".*"
         
         tasks = g.getRatings(userName,longitude,latitude, maxS, rep, k)
-        print("[INFO] get tasks:"+tasks)
+        print("[INFO] get tasks:"+str(tasks))
         if(len(tasks)<k):
             t= g.getRatingsByRandom(userName,longitude,latitude, maxS, rep, k-len(tasks))
             tasks.extend(t)
@@ -46,9 +46,6 @@ def getTasks(userName:str,longitude:float,latitude:float, maxS:float, search:str
     
 
 def updatePrefer(userName:str,do:int,taskId:int)->Res:
-    '''
-    do: 0->点击,1->点赞,2->联系,3->接取,4->不喜欢
-    '''
     try:
         g=nj.Neo4j()
         alpha=1.0
