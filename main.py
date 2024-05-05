@@ -9,11 +9,6 @@ import taskService as ts
 server = flask.Flask(__name__)
 
 ## 启动命令：neo4j.bat console
-@server.route('/test', methods=['post'])
-def test():
-    tn=flask.request.form['tasks'].split(',')
-    print(type(tn))
-    return json.dumps(tn)
 
 #@desc 添加新委托 1
 @server.route('/api/addNewTask', methods=['post'])
